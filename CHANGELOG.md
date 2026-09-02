@@ -2,6 +2,64 @@
 
 thief-reader 扩展的所有重要更改都将记录在此文件中。
 
+## [0.0.10] - 2026-09-02
+
+### ♻️ 重构
+- **重大架构重构**：将单一的 `extension.js` 文件（3708行）拆分为模块化的目录结构
+  - **目录结构优化**：创建 `src/` 目录，按功能模块组织代码
+    ```
+    src/
+    ├── managers/          # 状态管理类
+    │   ├── AltKeyManager.js      # Alt键状态管理器
+    │   └── StorageManager.js     # 存储管理器
+    ├── handlers/          # 事件处理器
+    │   ├── ScrollWheelHandler.js # 滚轮滚动处理器
+    │   └── MouseEventListener.js # 鼠标事件监听器
+    ├── windows/           # 窗口管理器
+    │   └── FloatingWindowManager.js # 悬浮窗管理器
+    ├── providers/         # 主提供者
+    │   └── ThiefReaderWebviewProvider.js # WebView提供者
+    ├── parsers/           # 文件解析器
+    │   ├── BaseParser.js         # 基础解析器接口
+    │   ├── PdfParser.js          # PDF文件解析器
+    │   ├── TxtParser.js          # TXT文件解析器
+    │   ├── EpubParser.js         # EPUB文件解析器
+    │   └── index.js              # 解析器工厂
+    ├── templates/         # HTML模板
+    │   ├── main-view.html        # 主界面模板
+    │   └── index.js              # 模板渲染器
+    ├── utils/             # 工具函数
+    │   ├── contentUtils.js       # 内容处理辅助函数
+    │   └── htmlTemplates.js      # HTML模板生成
+    └── index.js           # 统一导出入口
+    ```
+
+- **文件解析器解耦**：将不同文件类型的解析逻辑独立出来
+  - **BaseParser**：基础解析器接口，定义统一的解析方法
+  - **PdfParser**：PDF文件解析器，使用 `pdf-parse` 库
+  - **TxtParser**：TXT文件解析器，支持纯文本解析
+  - **EpubParser**：EPUB文件解析器，使用 `epub2` 库
+  - **ParserFactory**：解析器工厂，根据文件类型自动选择解析器
+
+- **HTML模板外置**：将WebView的HTML内容外置到单独的模板文件
+  - 创建 `templates/` 目录存放HTML模板
+  - 实现模板渲染器，支持变量替换
+  - 主界面模板与业务逻辑分离
+
+### 📊 代码统计
+- **重构前**：`extension.js` 单一文件 3708 行
+- **重构后**：
+  - `extension.js` 入口文件：66 行（精简 98%）
+  - `src/` 目录：共 9 个模块文件，约 3500 行代码
+  - 模块化程度大幅提升，可维护性显著改善
+
+### 🎯 重构目标
+1. **职责分离**：每个类都有明确的职责，便于维护
+2. **模块化**：使用 CommonJS 模块系统，支持按需导入
+3. **代码复用**：工具函数和通用逻辑独立提取
+4. **可扩展性**：新增文件类型只需添加新的解析器类
+5. **可测试性**：每个模块可以独立测试
+
 ## [0.0.9] - 2025-10-29
 
 ### ✨ 新增

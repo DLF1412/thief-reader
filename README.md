@@ -165,10 +165,77 @@
 
 ```
 thief-reader/
-├── extension.js          # 主要逻辑
-├── package.json          # 插件配置
-├── main-icon.png         # 侧边栏图标
-└── README.md            # 文档
+├── extension.js              # 扩展入口文件（精简版）
+├── package.json              # 插件配置
+├── main-icon.png             # 侧边栏图标
+├── README.md                 # 使用文档
+├── CHANGELOG.md              # 更新日志
+└── src/                      # 源代码目录
+    ├── managers/             # 状态管理类
+    │   ├── AltKeyManager.js      # Alt键状态管理器
+    │   └── StorageManager.js     # 存储管理器
+    ├── handlers/             # 事件处理器
+    │   ├── ScrollWheelHandler.js # 滚轮滚动处理器
+    │   └── MouseEventListener.js # 鼠标事件监听器
+    ├── windows/              # 窗口管理器
+    │   └── FloatingWindowManager.js # 悬浮窗管理器
+    ├── providers/            # 主提供者
+    │   └── ThiefReaderWebviewProvider.js # WebView提供者
+    ├── parsers/              # 文件解析器
+    │   ├── BaseParser.js         # 基础解析器接口
+    │   ├── PdfParser.js          # PDF文件解析器
+    │   ├── TxtParser.js          # TXT文件解析器
+    │   ├── EpubParser.js         # EPUB文件解析器
+    │   └── index.js              # 解析器工厂
+    ├── templates/            # HTML模板
+    │   ├── main-view.html        # 主界面模板
+    │   └── index.js              # 模板渲染器
+    ├── utils/                # 工具函数
+    │   ├── contentUtils.js       # 内容处理辅助函数
+    │   └── htmlTemplates.js      # HTML模板生成
+    └── index.js              # 统一导出入口
+```
+
+### 架构说明
+
+#### 模块职责
+
+| 模块 | 职责 | 说明 |
+|------|------|------|
+| **managers/** | 状态管理 | 管理Alt键状态和数据持久化 |
+| **handlers/** | 事件处理 | 处理滚轮、鼠标等用户交互事件 |
+| **windows/** | 窗口管理 | 管理章节预览弹窗的显示和隐藏 |
+| **providers/** | 核心逻辑 | WebView提供者，协调所有模块工作 |
+| **parsers/** | 文件解析 | 支持PDF/TXT/EPUB格式解析 |
+| **templates/** | 界面模板 | HTML模板和渲染器 |
+| **utils/** | 工具函数 | 通用的辅助函数 |
+
+#### 设计模式
+
+1. **工厂模式**：`ParserFactory` 根据文件类型自动创建对应的解析器
+2. **策略模式**：不同文件类型的解析策略独立实现
+3. **模板模式**：HTML模板与业务逻辑分离，支持变量替换
+4. **单例模式**：解析器工厂和模板渲染器使用单例模式
+
+#### 扩展性
+
+新增文件类型支持只需：
+1. 创建新的解析器类继承 `BaseParser`
+2. 实现 `parse()` 和 `getSupportedExtensions()` 方法
+3. 在 `ParserFactory` 中注册新解析器
+
+```javascript
+// 示例：添加 MOBI 格式支持
+class MobiParser extends BaseParser {
+  getSupportedExtensions() {
+    return ['.mobi'];
+  }
+
+  async parse(filePath) {
+    // 实现解析逻辑
+    return { content, chapters, pageCount };
+  }
+}
 ```
 
 ### 本地调试

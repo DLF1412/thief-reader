@@ -12,17 +12,53 @@
 
 ### 核心文件结构
 
-- **`extension.js`** - 主要逻辑文件，包含所有核心功能
-- **`package.json`** - 插件配置文件，定义命令和依赖
-- **`README.md`** - 详细的使用文档
-- **`main-icon.png`** - 侧边栏图标
+```
+thief-reader/
+├── extension.js              # 扩展入口文件（精简版）
+├── package.json              # 插件配置
+├── main-icon.png             # 侧边栏图标
+├── README.md                 # 使用文档
+├── CHANGELOG.md              # 更新日志
+└── src/                      # 源代码目录
+    ├── managers/             # 状态管理类
+    │   ├── AltKeyManager.js      # Alt键状态管理器
+    │   └── StorageManager.js     # 存储管理器
+    ├── handlers/             # 事件处理器
+    │   ├── ScrollWheelHandler.js # 滚轮滚动处理器
+    │   └── MouseEventListener.js # 鼠标事件监听器
+    ├── windows/              # 窗口管理器
+    │   └── FloatingWindowManager.js # 悬浮窗管理器
+    ├── providers/            # 主提供者
+    │   └── ThiefReaderWebviewProvider.js # WebView提供者
+    ├── parsers/              # 文件解析器
+    │   ├── BaseParser.js         # 基础解析器接口
+    │   ├── PdfParser.js          # PDF文件解析器
+    │   ├── TxtParser.js          # TXT文件解析器
+    │   ├── EpubParser.js         # EPUB文件解析器
+    │   └── index.js              # 解析器工厂
+    ├── templates/            # HTML模板
+    │   ├── main-view.html        # 主界面模板
+    │   └── index.js              # 模板渲染器
+    ├── utils/                # 工具函数
+    │   ├── contentUtils.js       # 内容处理辅助函数
+    │   └── htmlTemplates.js      # HTML模板生成
+    └── index.js              # 统一导出入口
+```
 
 ### 主要类结构
 
 1. **`AltKeyManager`** - 管理 Alt 键状态
 2. **`ScrollWheelHandler`** - 处理滚动事件
 3. **`FloatingWindowManager`** - 管理章节预览弹窗
-4. **`ThiefReaderProvider`** - 主要提供者类，管理整体功能
+4. **`ThiefReaderWebviewProvider`** - 主要提供者类，管理整体功能
+5. **`StorageManager`** - 存储管理器，处理数据持久化
+6. **`MouseEventListener`** - 鼠标事件监听器
+7. **`BaseParser`** - 基础解析器接口
+8. **`PdfParser`** - PDF文件解析器
+9. **`TxtParser`** - TXT文件解析器
+10. **`EpubParser`** - EPUB文件解析器
+11. **`ParserFactory`** - 解析器工厂
+12. **`TemplateRenderer`** - 模板渲染器
 
 ## 核心功能
 
@@ -50,6 +86,18 @@
 - `epub2` - EPUB 文件解析
 - VSCode Extension API - 插件框架
 
+## 模块职责
+
+| 模块 | 职责 | 说明 |
+|------|------|------|
+| **managers/** | 状态管理 | 管理Alt键状态和数据持久化 |
+| **handlers/** | 事件处理 | 处理滚轮、鼠标等用户交互事件 |
+| **windows/** | 窗口管理 | 管理章节预览弹窗的显示和隐藏 |
+| **providers/** | 核心逻辑 | WebView提供者，协调所有模块工作 |
+| **parsers/** | 文件解析 | 支持PDF/TXT/EPUB格式解析 |
+| **templates/** | 界面模板 | HTML模板和渲染器 |
+| **utils/** | 工具函数 | 通用的辅助函数 |
+
 ## 开发注意事项
 
 1. **仅支持纯文本内容**，不支持图片显示
@@ -66,7 +114,11 @@
 
 ## 当前状态
 
-版本：0.0.10，积极开发中，最近更新了章节预览弹窗和透明度控制功能。
+版本：0.0.10，积极开发中，最近完成了重大架构重构：
+- 将单一的 `extension.js` 文件拆分为模块化的目录结构
+- 实现了文件解析器的解耦（支持PDF/TXT/EPUB）
+- 将HTML模板外置到单独的模板文件
+- 代码可维护性和可扩展性大幅提升
 
 ## Claude 助手使用指南
 

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thief-reader</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 10px;
+            margin: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--vscode-textLink-foreground);
+            margin-bottom: 10px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--vscode-textLink-foreground);
+            border-bottom: 1px solid var(--vscode-widget-border);
+            padding-bottom: 5px;
+        }
+        .btn-primary {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .btn-primary:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        .file-item, .chapter-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+        .file-item:hover, .chapter-item:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+        .file-item.active, .chapter-item.active {
+            background-color: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
+        }
+        .file-item.disabled {
+            opacity: 0.6;
+            background-color: var(--vscode-input-background);
+            cursor: not-allowed;
+        }
+        .file-item.disabled:hover {
+            background-color: var(--vscode-input-background);
+        }
+        .file-name {
+            font-size: 12px;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 8px;
+        }
+        .chapter-title {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .file-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .btn-remove {
+            background-color: transparent;
+            color: var(--vscode-errorForeground);
+            border: 1px solid var(--vscode-errorForeground);
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.1s;
+        }
+        .btn-remove:hover {
+            background-color: var(--vscode-errorForeground);
+            color: var(--vscode-errorForeground--contrast);
+        }
+        .empty-state {
+            text-align: center;
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            padding: 20px;
+        }
+        .paste-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .paste-textarea:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: var(--vscode-foreground);
+        }
+        .opacity-slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--vscode-scrollbarSlider-background);
+            outline: none;
+            cursor: pointer;
+            border: none;
+        }
+        .opacity-slider:focus {
+            outline: none;
+            border: none;
+        }
+        .opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--vscode-button-background);
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        .opacity-slider::-webkit-slider-thumb:focus {
+            outline: none;
+            border: none;
+        }
+        .opacity-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--vscode-button-background);
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        .opacity-slider::-moz-range-thumb:focus {
+            outline: none;
+            border: none;
+        }
+        #opacity-value {
+            font-weight: bold;
+            color: var(--vscode-textLink-foreground);
+        }
+        #file-list {
+            max-height: 280px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #file-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #file-list::-webkit-scrollbar-track {
+            background: var(--vscode-scrollbarSlider-background);
+            border-radius: 4px;
+        }
+        #file-list::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbarSlider-hoverBackground);
+            border-radius: 4px;
+        }
+        #file-list::-webkit-scrollbar-thumb:hover {
+            background: var(--vscode-scrollbarSlider-activeBackground);
+        }
+        #chapter-list {
+            max-height: 450px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #chapter-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chapter-list::-webkit-scrollbar-track {
+            background: var(--vscode-scrollbarSlider-background);
+            border-radius: 4px;
+        }
+        #chapter-list::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbarSlider-hoverBackground);
+            border-radius: 4px;
+        }
+        #chapter-list::-webkit-scrollbar-thumb:hover {
+            background: var(--vscode-scrollbarSlider-activeBackground);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">📖 thief-reader</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">文件管理</div>
+        <button class="btn-primary" onclick="selectPdf()">选择文件 (PDF/TXT/EPUB)</button>
+        <button class="btn-primary" onclick="cleanupMissingFiles()" style="background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);">清理失效文件</button>
+        <div id="file-list">
+            ${fileListHtml}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">粘贴文本内容</div>
+        <textarea id="paste-textarea" class="paste-textarea" placeholder="将文本内容粘贴到这里..."></textarea>
+        <button class="btn-primary" onclick="loadPastedContent()">加载粘贴内容</button>
+    </div>
+
+    <div class="section">
+        <div class="section-title">设置</div>
+        <div class="setting-item">
+            <label for="opacity-slider">状态栏文字区域透明度: <span id="opacity-value">100</span>%</label>
+            <input type="range" id="opacity-slider" class="opacity-slider" min="5" max="100" value="100" step="5" oninput="updateOpacity(this.value)">
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">章节列表</div>
+        <div id="chapter-list">
+            ${chapterListHtml}
+        </div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // 页面加载时恢复透明度设置
+        window.addEventListener('DOMContentLoaded', () => {
+            vscode.postMessage({ command: 'getOpacity' });
+        });
+
+        // 监听来自扩展的消息
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'setOpacity':
+                    const slider = document.getElementById('opacity-slider');
+                    const valueSpan = document.getElementById('opacity-value');
+                    if (slider && valueSpan) {
+                        slider.value = message.value;
+                        valueSpan.textContent = message.value;
+                    }
+                    break;
+                case 'updateChapterHighlight':
+                    updateChapterHighlightUI(message.chapterIndex);
+                    break;
+            }
+        });
+
+        function selectPdf() {
+            vscode.postMessage({ command: 'selectPdf' });
+        }
+
+        function selectFile(fileId) {
+            vscode.postMessage({ command: 'selectFile', fileId: fileId });
+        }
+
+        function removeFile(fileId) {
+            vscode.postMessage({ command: 'removeFile', fileId: fileId });
+        }
+
+        function selectChapter(chapterId) {
+            vscode.postMessage({ command: 'selectChapter', chapterId: chapterId });
+        }
+
+        function loadPastedContent() {
+            const textarea = document.getElementById('paste-textarea');
+            const content = textarea.value.trim();
+
+            if (content.length === 0) {
+                return;
+            }
+
+            vscode.postMessage({
+                command: 'loadPastedContent',
+                content: content
+            });
+
+            textarea.value = '';
+        }
+
+        function updateOpacity(value) {
+            document.getElementById('opacity-value').textContent = value;
+            vscode.postMessage({
+                command: 'setOpacity',
+                value: parseInt(value)
+            });
+        }
+
+        function cleanupMissingFiles() {
+            vscode.postMessage({ command: 'cleanupMissingFiles' });
+        }
+
+        function updateChapterHighlightUI(chapterIndex) {
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            chapterItems.forEach(item => {
+                item.classList.remove('active');
+            });
+
+            const selectedChapter = document.querySelector(`.chapter-item[data-chapter-id="${chapterIndex}"]`);
+            if (selectedChapter) {
+                selectedChapter.classList.add('active');
+                selectedChapter.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
