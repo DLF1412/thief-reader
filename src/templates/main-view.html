@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,19 +14,23 @@
             padding: 10px;
             margin: 0;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
         }
+
         .title {
             font-size: 20px;
             font-weight: bold;
             color: var(--vscode-textLink-foreground);
             margin-bottom: 10px;
         }
+
         .section {
             margin-bottom: 20px;
         }
+
         .section-title {
             font-size: 14px;
             font-weight: bold;
@@ -34,6 +39,7 @@
             border-bottom: 1px solid var(--vscode-widget-border);
             padding-bottom: 5px;
         }
+
         .btn-primary {
             background-color: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
@@ -44,10 +50,13 @@
             font-size: 12px;
             margin-bottom: 10px;
         }
+
         .btn-primary:hover {
             background-color: var(--vscode-button-hoverBackground);
         }
-        .file-item, .chapter-item {
+
+        .file-item,
+        .chapter-item {
             padding: 8px;
             margin-bottom: 5px;
             border: 1px solid var(--vscode-widget-border);
@@ -55,21 +64,28 @@
             cursor: pointer;
             transition: background-color 0.1s;
         }
-        .file-item:hover, .chapter-item:hover {
+
+        .file-item:hover,
+        .chapter-item:hover {
             background-color: var(--vscode-list-hoverBackground);
         }
-        .file-item.active, .chapter-item.active {
+
+        .file-item.active,
+        .chapter-item.active {
             background-color: var(--vscode-list-activeSelectionBackground);
             color: var(--vscode-list-activeSelectionForeground);
         }
+
         .file-item.disabled {
             opacity: 0.6;
             background-color: var(--vscode-input-background);
             cursor: not-allowed;
         }
+
         .file-item.disabled:hover {
             background-color: var(--vscode-input-background);
         }
+
         .file-name {
             font-size: 12px;
             flex: 1;
@@ -78,15 +94,18 @@
             white-space: nowrap;
             margin-right: 8px;
         }
+
         .chapter-title {
             font-size: 12px;
             margin-bottom: 5px;
         }
+
         .file-actions {
             display: flex;
             gap: 5px;
             align-items: center;
         }
+
         .btn-remove {
             background-color: transparent;
             color: var(--vscode-errorForeground);
@@ -97,16 +116,19 @@
             font-size: 10px;
             transition: all 0.1s;
         }
+
         .btn-remove:hover {
             background-color: var(--vscode-errorForeground);
             color: var(--vscode-errorForeground--contrast);
         }
+
         .empty-state {
             text-align: center;
             color: var(--vscode-descriptionForeground);
             font-style: italic;
             padding: 20px;
         }
+
         .paste-textarea {
             width: 100%;
             min-height: 100px;
@@ -120,18 +142,22 @@
             border-radius: 4px;
             resize: vertical;
         }
+
         .paste-textarea:focus {
             outline: 1px solid var(--vscode-focusBorder);
         }
+
         .setting-item {
             margin-bottom: 15px;
         }
+
         .setting-item label {
             display: block;
             margin-bottom: 5px;
             font-size: 12px;
             color: var(--vscode-foreground);
         }
+
         .opacity-slider {
             width: 100%;
             height: 4px;
@@ -141,10 +167,12 @@
             cursor: pointer;
             border: none;
         }
+
         .opacity-slider:focus {
             outline: none;
             border: none;
         }
+
         .opacity-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -156,10 +184,12 @@
             border: none;
             outline: none;
         }
+
         .opacity-slider::-webkit-slider-thumb:focus {
             outline: none;
             border: none;
         }
+
         .opacity-slider::-moz-range-thumb {
             width: 12px;
             height: 12px;
@@ -169,54 +199,67 @@
             border: none;
             outline: none;
         }
+
         .opacity-slider::-moz-range-thumb:focus {
             outline: none;
             border: none;
         }
+
         #opacity-value {
             font-weight: bold;
             color: var(--vscode-textLink-foreground);
         }
+
         #file-list {
             max-height: 280px;
             overflow-y: auto;
             overflow-x: hidden;
         }
+
         #file-list::-webkit-scrollbar {
             width: 8px;
         }
+
         #file-list::-webkit-scrollbar-track {
             background: var(--vscode-scrollbarSlider-background);
             border-radius: 4px;
         }
+
         #file-list::-webkit-scrollbar-thumb {
             background: var(--vscode-scrollbarSlider-hoverBackground);
             border-radius: 4px;
         }
+
         #file-list::-webkit-scrollbar-thumb:hover {
             background: var(--vscode-scrollbarSlider-activeBackground);
         }
+
         #chapter-list {
             max-height: 450px;
             overflow-y: auto;
             overflow-x: hidden;
         }
+
         #chapter-list::-webkit-scrollbar {
             width: 8px;
         }
+
         #chapter-list::-webkit-scrollbar-track {
             background: var(--vscode-scrollbarSlider-background);
             border-radius: 4px;
         }
+
         #chapter-list::-webkit-scrollbar-thumb {
             background: var(--vscode-scrollbarSlider-hoverBackground);
             border-radius: 4px;
         }
+
         #chapter-list::-webkit-scrollbar-thumb:hover {
             background: var(--vscode-scrollbarSlider-activeBackground);
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <div class="title">📖 thief-reader</div>
@@ -225,7 +268,8 @@
     <div class="section">
         <div class="section-title">文件管理</div>
         <button class="btn-primary" onclick="selectPdf()">选择文件 (PDF/TXT/EPUB)</button>
-        <button class="btn-primary" onclick="cleanupMissingFiles()" style="background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);">清理失效文件</button>
+        <button class="btn-primary" onclick="cleanupMissingFiles()"
+            style="background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);">清理失效文件</button>
         <div id="file-list">
             ${fileListHtml}
         </div>
@@ -241,7 +285,21 @@
         <div class="section-title">设置</div>
         <div class="setting-item">
             <label for="opacity-slider">状态栏文字区域透明度: <span id="opacity-value">100</span>%</label>
-            <input type="range" id="opacity-slider" class="opacity-slider" min="5" max="100" value="100" step="5" oninput="updateOpacity(this.value)">
+            <input type="range" id="opacity-slider" class="opacity-slider" min="5" max="100" value="100" step="5"
+                oninput="updateOpacity(this.value)">
+        </div>
+        <div class="setting-item">
+            <label for="display-width-slider">状态栏显示长度: <span id="display-width-value">80</span></label>
+            <input type="range" id="display-width-slider" class="opacity-slider" min="30" max="100" value="80" step="1"
+                oninput="updateDisplayWidth(this.value)">
+        </div>
+        <div class="setting-item">
+            <label>当前章节正文显示长度: <span id="content-length-value">${contentLength}</span></label>
+        </div>
+        <div class="setting-item">
+            <label for="scroll-step-slider">滑动步长 (Alt+方向键): <span id="scroll-step-value">10</span></label>
+            <input type="range" id="scroll-step-slider" class="opacity-slider" min="1" max="90" value="10" step="1"
+                oninput="updateScrollStep(this.value)">
         </div>
     </div>
 
@@ -255,9 +313,10 @@
     <script>
         const vscode = acquireVsCodeApi();
 
-        // 页面加载时恢复透明度设置
+        // 页面加载时恢复设置
         window.addEventListener('DOMContentLoaded', () => {
             vscode.postMessage({ command: 'getOpacity' });
+            vscode.postMessage({ command: 'getDisplaySettings' });
         });
 
         // 监听来自扩展的消息
@@ -270,6 +329,27 @@
                     if (slider && valueSpan) {
                         slider.value = message.value;
                         valueSpan.textContent = message.value;
+                    }
+                    break;
+                case 'setDisplaySettings':
+                    const dwSlider = document.getElementById('display-width-slider');
+                    const dwValue = document.getElementById('display-width-value');
+                    const ssSlider = document.getElementById('scroll-step-slider');
+                    const ssValue = document.getElementById('scroll-step-value');
+                    if (dwSlider && dwValue) {
+                        dwSlider.value = message.displayWidth;
+                        dwValue.textContent = message.displayWidth;
+                    }
+                    if (ssSlider && ssValue) {
+                        ssSlider.value = message.scrollStep;
+                        ssValue.textContent = message.scrollStep;
+                    }
+                    break;
+                case 'updateContentLength':
+                    const clValue = document.getElementById('content-length-value');
+                    console.log('收到 updateContentLength 消息:', message.contentLength, '元素存在:', !!clValue);
+                    if (clValue) {
+                        clValue.textContent = message.contentLength;
                     }
                     break;
                 case 'updateChapterHighlight':
@@ -318,6 +398,22 @@
             });
         }
 
+        function updateDisplayWidth(value) {
+            document.getElementById('display-width-value').textContent = value;
+            vscode.postMessage({
+                command: 'setDisplayWidth',
+                value: parseInt(value)
+            });
+        }
+
+        function updateScrollStep(value) {
+            document.getElementById('scroll-step-value').textContent = value;
+            vscode.postMessage({
+                command: 'setScrollStep',
+                value: parseInt(value)
+            });
+        }
+
         function cleanupMissingFiles() {
             vscode.postMessage({ command: 'cleanupMissingFiles' });
         }
@@ -340,4 +436,5 @@
         }
     </script>
 </body>
+
 </html>

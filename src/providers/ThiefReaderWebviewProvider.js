@@ -7,6 +7,7 @@ const StorageManager = require('../managers/StorageManager');
 const ScrollWheelHandler = require('../handlers/ScrollWheelHandler');
 const MouseEventListener = require('../handlers/MouseEventListener');
 const FloatingWindowManager = require('../windows/FloatingWindowManager');
+const StatusBarDisplay = require('../display/StatusBarDisplay');
 const { getChapterContentAsString } = require('../utils/contentUtils');
 const { parserFactory } = require('../parsers');
 const { templateRenderer } = require('../templates');
@@ -22,8 +23,6 @@ class ThiefReaderWebviewProvider {
 		this._currentChapter = null;
 		this._currentPage = 0;
 		this._scrollOffset = 0;
-		this._statusBarItem = null;
-		this._opacity = 100;
 		this._statusBarVisible = true;
 		this._storageManager = new StorageManager(context);
 		this._saveDebounceTimer = null;
@@ -34,20 +33,13 @@ class ThiefReaderWebviewProvider {
 		this._floatingWindowManager = new FloatingWindowManager(context, this, this._scrollHandler);
 		this._mouseEventListener = new MouseEventListener(this._altKeyManager, this._floatingWindowManager, this, this._scrollHandler);
 
-		this._loadOpacity();
-		this._initStatusBar();
+		// 创建状态栏显示模块
+		this._statusBarDisplay = new StatusBarDisplay(context);
+		this._statusBarDisplay.init();
+
+		this._pendingChapterTitle = null; // 保存待发送的章节标题
+
 		this._restoreData();
-	}
-	/**
-	 * 初始化状态栏
-	 */
-	_initStatusBar() {
-		this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-		this._statusBarItem.text = "reader: 准备就绪 📖";
-		this._statusBarItem.tooltip = '点击显示/隐藏章节预览 • 使用 Alt + 方向键滚动文字';
-		this._statusBarItem.command = 'thief-reader.toggleChapterPreview'; // 设置点击命令
-		this._statusBarItem.show();
-		this._context.subscriptions.push(this._statusBarItem);
 	}
 
 	/**
@@ -55,14 +47,6 @@ class ThiefReaderWebviewProvider {
 	 */
 	toggleChapterPreview() {
 		this._floatingWindowManager.toggleChapterPreview();
-	}
-
-	/**
-	 * 初始化悬停功能（已废弃，保留用于兼容性）
-	 */
-	_initHoverFeature() {
-		// 功能已整合到状态栏按钮和章节预览中
-		console.log('章节预览功能已就绪');
 	}
 
 	/**
@@ -77,7 +61,7 @@ class ThiefReaderWebviewProvider {
 
 			// 第一次安装或没有保存的数据
 			if (!savedFiles || savedFiles.length === 0) {
-				this._statusBarItem.text = "reader: 准备就绪";
+				this._statusBarDisplay.setText = "reader: 准备就绪";
 				// 确保弹窗在首次启动时是关闭的
 				if (this._floatingWindowManager.isVisible()) {
 					this._floatingWindowManager.hide();
@@ -87,7 +71,7 @@ class ThiefReaderWebviewProvider {
 			}
 
 			// 有数据需要恢复时才显示恢复中的提示
-			this._statusBarItem.text = "reader: 正在恢复数据...";
+			this._statusBarDisplay.setText = "reader: 正在恢复数据...";
 
 			const restoredFiles = [];
 			const failedFiles = [];
@@ -223,7 +207,7 @@ class ThiefReaderWebviewProvider {
 		} catch (error) {
 			console.error('恢复数据失败:', error);
 			vscode.window.showErrorMessage('恢复阅读数据失败: ' + error.message);
-			this._statusBarItem.text = "reader: 准备就绪";
+			this._statusBarDisplay.setText = "reader: 准备就绪";
 			// 确保弹窗在出错时也是关闭的
 			if (this._floatingWindowManager.isVisible()) {
 				this._floatingWindowManager.hide();
@@ -240,7 +224,7 @@ class ThiefReaderWebviewProvider {
 			const state = await this._storageManager.loadReadingState();
 
 			if (!state || !state.currentFileId) {
-				this._statusBarItem.text = "reader: 准备就绪";
+				this._statusBarDisplay.setText = "reader: 准备就绪";
 				return;
 			}
 
@@ -249,7 +233,7 @@ class ThiefReaderWebviewProvider {
 
 			if (!file) {
 				// 文件已被删除
-				this._statusBarItem.text = "reader: 准备就绪";
+				this._statusBarDisplay.setText = "reader: 准备就绪";
 				return;
 			}
 
@@ -258,7 +242,7 @@ class ThiefReaderWebviewProvider {
 				vscode.window.showWarningMessage(
 					`上次阅读的文件 "${file.name}" 无法加载，请重新选择文件`
 				);
-				this._statusBarItem.text = "reader: 准备就绪";
+				this._statusBarDisplay.setText = "reader: 准备就绪";
 				return;
 			}
 
@@ -272,8 +256,10 @@ class ThiefReaderWebviewProvider {
 			if (this._currentChapter !== null && file.chapters && file.chapters.length > 0) {
 				const chapter = file.chapters[this._currentChapter];
 				this._displayChapterText(chapter);
+				// 发送正文内容长度到 WebView
+				this._sendContentLengthToView(chapter.title);
 			} else {
-				this._statusBarItem.text = `reader: 已恢复 ${file.name}`;
+				this._statusBarDisplay.setText = `reader: 已恢复 ${file.name}`;
 			}
 
 			// 确保弹窗在恢复后是关闭的
@@ -282,7 +268,7 @@ class ThiefReaderWebviewProvider {
 			}
 		} catch (error) {
 			console.error('恢复阅读状态失败:', error);
-			this._statusBarItem.text = "reader: 准备就绪";
+			this._statusBarDisplay.setText = "reader: 准备就绪";
 			// 确保弹窗在出错时也是关闭的
 			if (this._floatingWindowManager.isVisible()) {
 				this._floatingWindowManager.hide();
@@ -332,7 +318,7 @@ class ThiefReaderWebviewProvider {
 			this._currentFile = null;
 			this._currentChapter = null;
 			this._scrollOffset = 0;
-			this._statusBarItem.text = "reader: 准备就绪";
+			this._statusBarDisplay.setText = "reader: 准备就绪";
 		}
 
 		this._saveCurrentState();
@@ -511,6 +497,13 @@ class ThiefReaderWebviewProvider {
 		// 设置 WebView 的 HTML 内容
 		webviewView.webview.html = this._getHtmlContent();
 
+		// 如果有待发送的章节标题，发送正文内容长度
+		if (this._pendingChapterTitle) {
+			console.log('WebView 就绪，发送待发送的章节标题');
+			this._sendContentLengthToView(this._pendingChapterTitle);
+			this._pendingChapterTitle = null;
+		}
+
 		// 监听来自 WebView 的消息
 		webviewView.webview.onDidReceiveMessage(
 			async message => {
@@ -538,6 +531,15 @@ class ThiefReaderWebviewProvider {
 					break;
 				case 'cleanupMissingFiles':
 					this._cleanupMissingFiles();
+					break;
+				case 'getDisplaySettings':
+					this._sendDisplaySettingsToView();
+					break;
+				case 'setDisplayWidth':
+					this._setDisplayWidth(message.value);
+					break;
+				case 'setScrollStep':
+					this._setScrollStep(message.value);
 					break;
 				}
 			},
@@ -586,10 +588,20 @@ class ThiefReaderWebviewProvider {
 				</div>
 			`).join('') : '';
 
+		// 计算当前章节正文显示长度
+		let contentLength = 0;
+		if (this._currentChapter !== null && this._currentFile && this._currentFile.chapters) {
+			const chapter = this._currentFile.chapters[this._currentChapter];
+			if (chapter) {
+				contentLength = this._statusBarDisplay.calculateContentLength(chapter.title);
+			}
+		}
+
 		// 使用模板渲染器渲染 HTML
 		return templateRenderer.render('main-view', {
 			fileListHtml: fileListHtml || '<div class="empty-state">暂无文件，请点击上方按钮选择PDF、TXT或EPUB文件</div>',
-			chapterListHtml: chapterListHtml || '<div class="empty-state">请先选择一个文件或粘贴文本内容</div>'
+			chapterListHtml: chapterListHtml || '<div class="empty-state">请先选择一个文件或粘贴文本内容</div>',
+			contentLength: contentLength
 		});
 	}
 
@@ -628,7 +640,7 @@ class ThiefReaderWebviewProvider {
 			const fileName = path.basename(filePath);
 			const fileExtension = path.extname(filePath).toLowerCase();
 
-			this._statusBarItem.text = `reader: 正在解析 ${fileName}...`;
+			this._statusBarDisplay.setText = `reader: 正在解析 ${fileName}...`;
 
 			// 使用解析器工厂解析文件
 			const result = await parserFactory.parse(filePath);
@@ -683,17 +695,17 @@ class ThiefReaderWebviewProvider {
 					}
 
 					this._files[existingIndex] = fileInfo;
-					this._statusBarItem.text = `reader: 已重新加载 ${fileName}`;
+					this._statusBarDisplay.setText = `reader: 已重新加载 ${fileName}`;
 					vscode.window.showInformationMessage(`成功重新加载${fileInfo.type}文件: ${fileName}`);
 				} else {
 					// 用户取消，不做任何操作
-					this._statusBarItem.text = `reader: 取消加载`;
+					this._statusBarDisplay.setText = `reader: 取消加载`;
 					return;
 				}
 			} else {
 				// 新文件，直接添加
 				this._files.push(fileInfo);
-				this._statusBarItem.text = `reader: 已加载 ${fileName}`;
+				this._statusBarDisplay.setText = `reader: 已加载 ${fileName}`;
 				vscode.window.showInformationMessage(`成功加载${fileInfo.type}文件: ${fileName}`);
 			}
 
@@ -703,7 +715,7 @@ class ThiefReaderWebviewProvider {
 			// 刷新界面
 			this._refreshView();
 		} catch (error) {
-			this._statusBarItem.text = "reader: 加载失败";
+			this._statusBarDisplay.setText = "reader: 加载失败";
 			vscode.window.showErrorMessage(`加载文件失败: ${error.message}`);
 		}
 	}
@@ -713,7 +725,7 @@ class ThiefReaderWebviewProvider {
 	 */
 	async _loadPastedContent(content) {
 		try {
-			this._statusBarItem.text = "reader: 正在解析粘贴内容...";
+			this._statusBarDisplay.setText = "reader: 正在解析粘贴内容...";
 
 			// 使用 BaseParser 的静态方法提取章节
 			const BaseParser = require('../parsers/BaseParser');
@@ -748,7 +760,7 @@ class ThiefReaderWebviewProvider {
 			this._currentPage = 0;
 			this._scrollOffset = 0;
 
-			this._statusBarItem.text = `reader: 已加载粘贴内容`;
+			this._statusBarDisplay.setText = `reader: 已加载粘贴内容`;
 			vscode.window.showInformationMessage(`成功加载粘贴内容，共${chapters.length}个章节`);
 
 			// 保存状态
@@ -757,7 +769,7 @@ class ThiefReaderWebviewProvider {
 			// 刷新界面
 			this._refreshView();
 		} catch (error) {
-			this._statusBarItem.text = "reader: 加载失败";
+			this._statusBarDisplay.setText = "reader: 加载失败";
 			vscode.window.showErrorMessage(`加载粘贴内容失败: ${error.message}`);
 		}
 	}
@@ -799,6 +811,8 @@ class ThiefReaderWebviewProvider {
 		if (this._currentChapter !== null && file.chapters && file.chapters.length > 0) {
 			const chapter = file.chapters[this._currentChapter];
 			this._displayChapterText(chapter);
+			// 发送正文内容长度到 WebView
+			this._sendContentLengthToView(chapter.title);
 			// _displayChapterText 已经设置了完整的状态栏文本（包括章节标题、滚动位置、具体文字）
 
 			// 步骤5：切换文件时自动隐藏章节预览弹窗（在更新显示后）
@@ -810,7 +824,7 @@ class ThiefReaderWebviewProvider {
 				}, 50);
 			}
 		} else {
-			this._statusBarItem.text = `reader: 已选择 ${file.name} [${file.type}]`;
+			this._statusBarDisplay.setText = `reader: 已选择 ${file.name} [${file.type}]`;
 
 			// 如果没有章节内容，也要隐藏弹窗
 			if (this._floatingWindowManager.isVisible()) {
@@ -843,12 +857,21 @@ class ThiefReaderWebviewProvider {
 			// 步骤3：恢复新章节的滚动位置
 			this._scrollOffset = this._getChapterPosition(chapterIndex);
 
-			// 步骤4：显示内容
+			// 步骤4：根据章节标题自动调整滑动步长
 			const chapter = this._currentFile.chapters[chapterIndex];
+			this._statusBarDisplay.autoAdjustScrollStep(chapter.title);
+
+			// 步骤5：发送更新后的滑动步长到 WebView 设置面板
+			this._sendDisplaySettingsToView();
+
+			// 步骤6：发送正文内容长度到 WebView 设置面板
+			this._sendContentLengthToView(chapter.title);
+
+			// 步骤7：显示内容
 			this._displayChapterText(chapter);
 			this._saveCurrentState();
 
-			// 步骤5：切换章节时自动隐藏章节预览弹窗（在更新显示后）
+			// 步骤8：切换章节时自动隐藏章节预览弹窗（在更新显示后）
 			if (this._floatingWindowManager.isVisible()) {
 				this._floatingWindowManager.hide();
 				// 隐藏弹窗后立即刷新状态栏，确保图标正确更新为📖
@@ -875,7 +898,7 @@ class ThiefReaderWebviewProvider {
 	}
 
 	/**
-	 * 显示章节文字 - 全局连续滑动，确保能看到所有字符
+	 * 显示章节文字 - 适配器方法，调用 StatusBarDisplay 模块
 	 */
 	_displayChapterText(chapter) {
 		if (!chapter || !chapter.content) return;
@@ -885,42 +908,16 @@ class ThiefReaderWebviewProvider {
 			return;
 		}
 
-		// 获取完整章节内容（不再分页）
+		// 获取完整章节内容
 		const fullContent = chapter.content.join(' ');
-		const totalLength = fullContent.length;
 
-		// 固定显示长度
-		const displayLength = 80;
-
-		// 计算最大偏移量：允许滑动到最后一个字符
-		// 让最后一个字符可以显示在窗口的开始位置
-		const maxScrollOffset = Math.max(0, totalLength - 1);
-
-		// 确保偏移量在有效范围内
-		this._scrollOffset = Math.max(0, Math.min(this._scrollOffset, maxScrollOffset));
-
-		// 从全局偏移量提取显示内容
-		// 如果接近末尾，可能显示不足displayLength个字符
-		const actualEndPos = Math.min(this._scrollOffset + displayLength, totalLength);
-		const displayContent = fullContent.substring(this._scrollOffset, actualEndPos);
-
-		// 滚动指示器：显示当前位置和总长度
-		const scrollIndicator = totalLength > displayLength
-			? ` [${this._scrollOffset}-${actualEndPos}/${totalLength}]`
-			: '';
-
-		// 应用透明度到文本颜色
-		// 基础颜色：rgba(135,135,135,1)，根据透明度设置调整alpha值
-		const alpha = (this._opacity / 100).toFixed(2);
-		this._statusBarItem.color = `rgba(135, 135, 135, ${alpha})`;
-
-		// 检查预览窗口是否显示
-		const previewStatus = this._floatingWindowManager.isVisible() ? '🔍' : '📖';
-
-		// 更新状态栏文本和图标
-		this._statusBarItem.text = `reader: ${chapter.title}${scrollIndicator} - ${displayContent} ${previewStatus}`;
-
-		console.log(`状态栏已更新: ${chapter.title} 偏移量${this._scrollOffset} 预览状态${previewStatus}`);
+		// 通过状态栏显示模块更新
+		this._statusBarDisplay.updateDisplay({
+			chapterTitle: chapter.title,
+			scrollOffset: this._scrollOffset,
+			content: fullContent,
+			totalLength: fullContent.length
+		});
 	}
 
 	/**
@@ -940,7 +937,7 @@ class ThiefReaderWebviewProvider {
 				this._currentChapter = null;
 				this._currentPage = 0;
 				this._scrollOffset = 0;
-				this._statusBarItem.text = "reader: 准备就绪";
+				this._statusBarDisplay.setText = "reader: 准备就绪";
 			}
 
 			vscode.window.showInformationMessage(`已删除${fileType}文件: ${fileName}`);
@@ -976,21 +973,27 @@ class ThiefReaderWebviewProvider {
 			this._toggleStatusBarVisibility();
 		});
 
+		// 注册切换状态栏内容显示/隐藏命令 (Alt + 空格键)
+		const toggleStatusBarContentCommand = vscode.commands.registerCommand('thief-reader.toggleStatusBarContent', () => {
+			this._toggleStatusBarContent();
+		});
+
 		this._context.subscriptions.push(
 			previousPageCommand,
 			nextPageCommand,
 			scrollLeftCommand,
 			scrollRightCommand,
-			toggleVisibilityCommand
+			toggleVisibilityCommand,
+			toggleStatusBarContentCommand
 		);
 	}
 
 	/**
-	 * 上一页 (Alt + Shift + 左方向键) - 快速向前跳转80个字符
+	 * 上一页 (Alt + Shift + 左方向键) - 快速向前跳转显示宽度个字符
 	 */
 	_previousPage() {
 		if (this._currentChapter !== null && this._currentFile) {
-			const jumpSize = 80; // 跳转一个显示窗口的大小
+			const jumpSize = this._statusBarDisplay.getDisplayWidth(); // 从配置读取显示宽度
 
 			if (this._scrollOffset > 0) {
 				this._scrollOffset = Math.max(0, this._scrollOffset - jumpSize);
@@ -1004,13 +1007,13 @@ class ThiefReaderWebviewProvider {
 	}
 
 	/**
-	 * 下一页 (Alt + Shift + 右方向键) - 快速向后跳转80个字符
+	 * 下一页 (Alt + Shift + 右方向键) - 快速向后跳转显示宽度个字符
 	 */
 	_nextPage() {
 		if (this._currentChapter !== null && this._currentFile) {
 			const chapter = this._currentFile.chapters[this._currentChapter];
 			const fullContent = chapter.content.join(' ');
-			const jumpSize = 80; // 跳转一个显示窗口的大小
+			const jumpSize = this._statusBarDisplay.getDisplayWidth(); // 从配置读取显示宽度
 			const maxScrollOffset = Math.max(0, fullContent.length - 1);
 
 			if (this._scrollOffset < maxScrollOffset) {
@@ -1025,10 +1028,11 @@ class ThiefReaderWebviewProvider {
 
 	/**
 	 * 向左滑动 (Alt + 左方向键) - 在整个章节中向左滑动
+	 * 如果滑动到章节开头，自动切换到上一章
 	 */
 	_scrollLeft() {
 		if (this._currentChapter !== null && this._currentFile) {
-			const scrollStep = 10; // 每次滑动10个字符
+			const scrollStep = this._statusBarDisplay.getScrollStep(); // 从配置读取滑动步长
 
 			if (this._scrollOffset > 0) {
 				this._scrollOffset = Math.max(0, this._scrollOffset - scrollStep);
@@ -1037,16 +1041,54 @@ class ThiefReaderWebviewProvider {
 				// 保存当前章节位置
 				this._saveChapterPosition(this._currentChapter, this._scrollOffset);
 				this._saveCurrentState();
+			} else if (this._currentChapter > 0) {
+				// 滑动到章节开头，切换到上一章
+				// 计算上一章的显示位置：显示最后的余数内容
+				const prevChapterIndex = this._currentChapter - 1;
+				const prevChapter = this._currentFile.chapters[prevChapterIndex];
+				const prevContent = prevChapter.content.join(' ');
+				const displayLength = this._statusBarDisplay.getDisplayWidth();
+
+				// 计算标题部分长度（用于计算正文显示长度）
+				const maxTitlePartLength = 25;
+				let displayTitle = prevChapter.title || '';
+				const maxTitleLength = maxTitlePartLength - 7 - 1; // 7=进度条, 1=图标
+				if (displayTitle.length > maxTitleLength) {
+					displayTitle = displayTitle.substring(0, maxTitleLength - 1) + '…';
+				}
+				const progressStr = `[${'0'.padStart(5, '0')}%]`;
+				const titlePartLength = displayTitle.length + progressStr.length;
+				const contentDisplayLength = displayLength - titlePartLength;
+
+				// 计算上一章的滚动位置：显示最后的余数内容
+				const remainder = prevContent.length % contentDisplayLength;
+				const scrollOffset = remainder > 0 ? prevContent.length - remainder : Math.max(0, prevContent.length - contentDisplayLength);
+
+				// 调用 _selectChapter 切换章节并设置位置
+				this._currentChapter = prevChapterIndex;
+				this._scrollOffset = scrollOffset;
+				this._saveChapterPosition(prevChapterIndex, scrollOffset);
+
+				// 根据新章节标题自动调整滑动步长
+				this._statusBarDisplay.autoAdjustScrollStep(prevChapter.title);
+				this._sendDisplaySettingsToView();
+				this._sendContentLengthToView(prevChapter.title);
+
+				const chapter = this._currentFile.chapters[this._currentChapter];
+				this._displayChapterText(chapter);
+				this._saveCurrentState();
+				this._updateChapterHighlight(prevChapterIndex);
 			}
 		}
 	}
 
 	/**
 	 * 向右滑动 (Alt + 右方向键) - 在整个章节中向右滑动
+	 * 如果滑动到章节末尾，自动切换到下一章
 	 */
 	_scrollRight() {
 		if (this._currentChapter !== null && this._currentFile) {
-			const scrollStep = 10; // 每次滑动10个字符
+			const scrollStep = this._statusBarDisplay.getScrollStep(); // 从配置读取滑动步长
 			const chapter = this._currentFile.chapters[this._currentChapter];
 			const fullContent = chapter.content.join(' ');
 			const maxScrollOffset = Math.max(0, fullContent.length - 1);
@@ -1057,6 +1099,9 @@ class ThiefReaderWebviewProvider {
 				// 保存当前章节位置
 				this._saveChapterPosition(this._currentChapter, this._scrollOffset);
 				this._saveCurrentState();
+			} else if (this._currentChapter < this._currentFile.chapters.length - 1) {
+				// 滑动到章节末尾，切换到下一章
+				this._selectChapter(this._currentChapter + 1);
 			}
 		}
 	}
@@ -1070,25 +1115,30 @@ class ThiefReaderWebviewProvider {
 	}
 
 	/**
+	 * 切换状态栏内容显示/隐藏 (Alt + 空格键)
+	 * 通过修改透明度实现：隐藏时透明度为0，显示时恢复原透明度
+	 */
+	_toggleStatusBarContent() {
+		// 通过状态栏显示模块切换内容显示/隐藏
+		this._statusBarDisplay.toggleContentVisibility();
+
+		// 如果当前有内容显示，立即更新状态栏
+		if (this._currentChapter !== null && this._currentFile) {
+			const chapter = this._currentFile.chapters[this._currentChapter];
+			this._displayChapterText(chapter);
+		}
+	}
+
+	/**
 	 * 设置透明度
 	 * @param {number} value - 透明度值 (5-100)
 	 */
 	_setOpacity(value) {
-		// 确保值在有效范围内
-		this._opacity = Math.max(5, Math.min(100, value));
+		// 通过状态栏显示模块设置透明度
+		this._statusBarDisplay.setOpacity(value);
 
-		// 更新状态栏的背景颜色（通过设置color属性的透明度）
-		this._applyOpacityToStatusBar();
-
-		// 保存设置到VS Code配置
-		vscode.workspace.getConfiguration('thief-reader').update('statusBarOpacity', this._opacity, true);
-	}
-
-	/**
-	 * 应用透明度到状态栏
-	 */
-	_applyOpacityToStatusBar() {
-		if (this._statusBarItem && this._currentChapter !== null && this._currentFile) {
+		// 如果当前有内容显示，立即更新
+		if (this._currentChapter !== null && this._currentFile) {
 			const chapter = this._currentFile.chapters[this._currentChapter];
 			this._displayChapterText(chapter);
 		}
@@ -1101,19 +1151,72 @@ class ThiefReaderWebviewProvider {
 		if (this._view) {
 			this._view.webview.postMessage({
 				command: 'setOpacity',
-				value: this._opacity
+				value: this._statusBarDisplay.getOpacity()
 			});
 		}
 	}
 
 	/**
-	 * 从配置中加载透明度
+	 * 设置显示宽度
+	 * @param {number} value - 显示宽度值 (30-100)
 	 */
-	_loadOpacity() {
-		const config = vscode.workspace.getConfiguration('thief-reader');
-		const savedOpacity = config.get('statusBarOpacity');
-		if (savedOpacity !== undefined) {
-			this._opacity = savedOpacity;
+	_setDisplayWidth(value) {
+		this._statusBarDisplay.setDisplayWidth(value);
+
+		// 如果当前有内容显示，根据当前章节标题自动调整滑动步长
+		if (this._currentChapter !== null && this._currentFile) {
+			const chapter = this._currentFile.chapters[this._currentChapter];
+			this._statusBarDisplay.autoAdjustScrollStep(chapter.title);
+
+			// 发送更新后的滑动步长到 WebView 设置面板
+			this._sendDisplaySettingsToView();
+
+			// 发送更新后的正文长度到 WebView 设置面板
+			this._sendContentLengthToView(chapter.title);
+
+			// 更新状态栏显示
+			this._displayChapterText(chapter);
+		}
+	}
+
+	/**
+	 * 设置滑动步长
+	 * @param {number} value - 滑动步长值 (1-90)
+	 */
+	_setScrollStep(value) {
+		this._statusBarDisplay.setScrollStep(value);
+	}
+
+	/**
+	 * 发送显示设置到WebView
+	 */
+	_sendDisplaySettingsToView() {
+		if (this._view) {
+			this._view.webview.postMessage({
+				command: 'setDisplaySettings',
+				displayWidth: this._statusBarDisplay.getDisplayWidth(),
+				scrollStep: this._statusBarDisplay.getScrollStep()
+			});
+		}
+	}
+
+	/**
+	 * 发送正文内容长度到WebView
+	 * @param {string} chapterTitle - 章节标题
+	 */
+	_sendContentLengthToView(chapterTitle) {
+		const contentLength = this._statusBarDisplay.calculateContentLength(chapterTitle);
+		console.log(`发送正文长度到 WebView: ${contentLength} (标题: ${chapterTitle})`);
+
+		if (this._view) {
+			this._view.webview.postMessage({
+				command: 'updateContentLength',
+				contentLength: contentLength
+			});
+		} else {
+			// 保存章节标题，等 view 准备好后再发送
+			console.log('WebView 未就绪，保存章节标题到 pending');
+			this._pendingChapterTitle = chapterTitle;
 		}
 	}
 

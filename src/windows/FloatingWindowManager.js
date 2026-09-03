@@ -91,6 +91,9 @@ class FloatingWindowManager {
 			this._updateChapterPreview(previewData);
 			this._isVisible = true;
 
+			// 更新图标状态为悬浮窗模式
+			this._readerProvider._statusBarDisplay.updateIcon(true);
+
 			console.log('章节预览窗已显示:', chapter.title);
 
 		} catch (error) {
@@ -112,6 +115,9 @@ class FloatingWindowManager {
 	 */
 	hide() {
 		if (this._webviewPanel) {
+			// 更新图标状态为正常模式
+			this._readerProvider._statusBarDisplay.updateIcon(false);
+
 			// 使用最后记录的滚动位置进行同步（避免向disposed WebView发送消息）
 			this._syncLastScrollPositionToStatusBar();
 
@@ -223,17 +229,17 @@ class FloatingWindowManager {
 			// 更新状态栏位置
 			this._readerProvider._scrollOffset = newTextOffset;
 
-			// 立即更新状态栏显示（传入章节参数）
-			this._readerProvider._displayChapterText(chapter);
+			// 通过状态栏显示模块更新
+			this._readerProvider._statusBarDisplay.updateDisplay({
+				chapterTitle: chapter.title,
+				scrollOffset: newTextOffset,
+				content: fullContent,
+				totalLength: fullContent.length
+			});
 
 			// 保存当前状态（包括章节位置）
 			this._readerProvider._saveChapterPosition(this._readerProvider._currentChapter, newTextOffset);
 			this._readerProvider._saveCurrentState();
-
-			// 强制刷新状态栏显示（确保图标同步）
-			setTimeout(() => {
-				this._readerProvider._displayChapterText(chapter);
-			}, 50);
 
 			console.log(`✅ 弹窗滚动位置已同步到状态栏: 字符偏移量 ${newTextOffset}`);
 		} catch (error) {
@@ -361,8 +367,13 @@ class FloatingWindowManager {
 			// 更新状态栏位置
 			this._readerProvider._scrollOffset = newTextOffset;
 
-			// 立即更新状态栏显示（传入章节参数）
-			this._readerProvider._displayChapterText(chapter);
+			// 通过状态栏显示模块更新
+			this._readerProvider._statusBarDisplay.updateDisplay({
+				chapterTitle: chapter.title,
+				scrollOffset: newTextOffset,
+				content: fullContent,
+				totalLength: fullContent.length
+			});
 
 			// 保存当前状态
 			this._readerProvider._saveCurrentState();

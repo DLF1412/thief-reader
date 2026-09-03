@@ -2,18 +2,22 @@
   "name": "thief-reader",
   "displayName": "thief-reader",
   "description": "一个隐蔽的 VSCode 阅读器插件，支持 PDF、TXT、EPUB，使用 Alt + 方向键在状态栏中低调阅读",
-	"version": "0.0.10",
+  "version": "0.0.10",
   "publisher": "neroneroffy",
   "icon": "main-icon.png",
   "repository": "https://github.com/neroneroffy/thief-reader",
   "author": {
     "name": "neroneroffy",
-
     "url": "https://github.com/neroneroffy"
   },
   "license": "MIT",
   "keywords": [
-    "vscode", "extension", "reader", "pdf", "txt", "epub"
+    "vscode",
+    "extension",
+    "reader",
+    "pdf",
+    "txt",
+    "epub"
   ],
   "engines": {
     "vscode": "^1.85.0"
@@ -23,69 +27,99 @@
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "thief-reader.open",
-      "title": "thief-reader: 打开"
-    }, {
-      "command": "thief-reader.previousPage",
-      "title": "thief-reader: 上一页"
-    }, {
-      "command": "thief-reader.nextPage",
-      "title": "thief-reader: 下一页"
-    }, {
-      "command": "thief-reader.scrollLeft",
-      "title": "thief-reader: 向左滑动"
-    }, {
-      "command": "thief-reader.scrollRight",
-      "title": "thief-reader: 向右滑动"
-    }, {
-      "command": "thief-reader.toggleVisibility",
-      "title": "thief-reader: 切换状态栏文字显示/隐藏"
-    }, {
-      "command": "thief-reader.toggleChapterPreview",
-      "title": "thief-reader: 切换章节预览"
-    }, {
-      "command": "thief-reader.showHoverPreview",
-      "title": "thief-reader: 显示悬停预览"
-    }, {
-      "command": "thief-reader.hideHoverPreview",
-      "title": "thief-reader: 隐藏悬停预览"
-    }],
-    "keybindings": [{
-      "command": "thief-reader.previousPage",
-      "key": "alt+shift+left"
-    }, {
-      "command": "thief-reader.nextPage",
-      "key": "alt+shift+right"
-    }, {
-      "command": "thief-reader.scrollLeft",
-      "key": "alt+left"
-    }, {
-      "command": "thief-reader.scrollRight",
-      "key": "alt+right"
-    }, {
-      "command": "thief-reader.toggleChapterPreview",
-      "key": "shift+space"
-    }, {
-      "command": "thief-reader.showHoverPreview",
-      "key": "ctrl+alt+h"
-    }, {
-      "command": "thief-reader.hideHoverPreview",
-      "key": "ctrl+alt+shift+h"
-    }],
+    "commands": [
+      {
+        "command": "thief-reader.open",
+        "title": "thief-reader: 打开"
+      },
+      {
+        "command": "thief-reader.previousPage",
+        "title": "thief-reader: 上一页"
+      },
+      {
+        "command": "thief-reader.nextPage",
+        "title": "thief-reader: 下一页"
+      },
+      {
+        "command": "thief-reader.scrollLeft",
+        "title": "thief-reader: 向左滑动"
+      },
+      {
+        "command": "thief-reader.scrollRight",
+        "title": "thief-reader: 向右滑动"
+      },
+      {
+        "command": "thief-reader.toggleVisibility",
+        "title": "thief-reader: 切换状态栏文字显示/隐藏"
+      },
+      {
+        "command": "thief-reader.toggleChapterPreview",
+        "title": "thief-reader: 切换章节预览"
+      },
+      {
+        "command": "thief-reader.toggleStatusBarContent",
+        "title": "thief-reader: 显示/隐藏状态栏内容"
+      },
+      {
+        "command": "thief-reader.showHoverPreview",
+        "title": "thief-reader: 显示悬停预览"
+      },
+      {
+        "command": "thief-reader.hideHoverPreview",
+        "title": "thief-reader: 隐藏悬停预览"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "thief-reader.previousPage",
+        "key": "alt+shift+left"
+      },
+      {
+        "command": "thief-reader.nextPage",
+        "key": "alt+shift+right"
+      },
+      {
+        "command": "thief-reader.scrollLeft",
+        "key": "alt+left"
+      },
+      {
+        "command": "thief-reader.scrollRight",
+        "key": "alt+right"
+      },
+      {
+        "command": "thief-reader.toggleChapterPreview",
+        "key": "shift+space"
+      },
+      {
+        "command": "thief-reader.toggleStatusBarContent",
+        "key": "alt+up"
+      },
+      {
+        "command": "thief-reader.showHoverPreview",
+        "key": "ctrl+alt+h"
+      },
+      {
+        "command": "thief-reader.hideHoverPreview",
+        "key": "ctrl+alt+shift+h"
+      }
+    ],
     "viewsContainers": {
-      "activitybar": [{
-        "id": "thief-reader-explorer",
-        "title": "thief-reader",
-        "icon": "main-icon.png"
-      }]
+      "activitybar": [
+        {
+          "id": "thief-reader-explorer",
+          "title": "thief-reader",
+          "icon": "main-icon.png"
+        }
+      ]
     },
     "views": {
-      "thief-reader-explorer": [{
-        "id": "thief-reader-main",
-        "name": "thief-reader 主界面",
-        "type": "webview"
-      }]
+      "thief-reader-explorer": [
+        {
+          "id": "thief-reader-main",
+          "name": "thief-reader 主界面",
+          "type": "webview"
+        }
+      ]
     },
     "configuration": {
       "title": "thief-reader",
@@ -96,6 +130,20 @@
           "minimum": 5,
           "maximum": 100,
           "description": "状态栏文字区域的透明度 (5-100)"
+        },
+        "thief-reader.statusBarDisplayWidth": {
+          "type": "number",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 100,
+          "description": "状态栏显示内容长度（字符数），控制状态栏中显示的文本字符数"
+        },
+        "thief-reader.scrollStep": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 90,
+          "description": "Alt+左/右方向键的滑动步长（字符数）"
         }
       }
     }

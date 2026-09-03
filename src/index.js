@@ -14,6 +14,9 @@ const MouseEventListener = require('./handlers/MouseEventListener');
 // 窗口管理器
 const FloatingWindowManager = require('./windows/FloatingWindowManager');
 
+// 显示模块
+const StatusBarDisplay = require('./display/StatusBarDisplay');
+
 // 提供者
 const ThiefReaderWebviewProvider = require('./providers/ThiefReaderWebviewProvider');
 
@@ -38,6 +41,9 @@ module.exports = {
 
 	// 窗口管理器
 	FloatingWindowManager,
+
+	// 显示模块
+	StatusBarDisplay,
 
 	// 提供者
 	ThiefReaderWebviewProvider,

@@ -114,8 +114,17 @@ class ScrollWheelHandler {
 			// 保存当前状态
 			this._readerProvider._saveCurrentState();
 
-			// 更新状态栏显示
-			this._readerProvider._displayChapterText();
+			// 通过状态栏显示模块更新
+			const chapter = this._readerProvider._currentFile.chapters[this._readerProvider._currentChapter];
+			if (chapter && chapter.content) {
+				const fullContent = chapter.content.join(' ');
+				this._readerProvider._statusBarDisplay.updateDisplay({
+					chapterTitle: chapter.title,
+					scrollOffset: this._scrollPosition,
+					content: fullContent,
+					totalLength: fullContent.length
+				});
+			}
 
 			console.log(`滚动位置已同步到状态栏: ${this._scrollPosition}`);
 		}

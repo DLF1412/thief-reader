@@ -34,6 +34,13 @@
   * 提供的测试运行器只会考虑匹配名称模式 `**.test.js` 的文件。
   * 您可以在 `test` 文件夹内创建文件夹，以任何您想要的方式组织您的测试。
 
+## 打包
+
+``` shell
+npm install -g @vscode/vsce
+vsce package
+```
+
 ## 进一步发展
 
 * [遵循 UX 指南](https://code.visualstudio.com/api/ux-guidelines/overview) 创建与 VS Code 原生界面和模式无缝集成的扩展。
